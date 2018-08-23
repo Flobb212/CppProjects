@@ -1,3 +1,3 @@
 ﻿  Tetris.cpp
-  Tetris.vcxproj -> C:\Users\tbfletcher-lobb\Documents\GitHub\C-Plus-Plus-Tetris\Tetris\Debug\Tetris.exe
-  Tetris.vcxproj -> C:\Users\tbfletcher-lobb\Documents\GitHub\C-Plus-Plus-Tetris\Tetris\Debug\Tetris.pdb (Partial PDB)
+c:\users\lobb\desktop\cppprojects\tetris\tetris\tetris.cpp(238): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Tetris.vcxproj -> C:\Users\Lobb\Desktop\CppProjects\Tetris\Debug\Tetris.exe

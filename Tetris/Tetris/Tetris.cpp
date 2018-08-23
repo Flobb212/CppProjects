@@ -3,14 +3,18 @@
 #include <Windows.h>
 #include <thread>
 #include <vector>
+#include <stdlib.h>
 using namespace std;
+
+// Base code from tutorial by javidx9
+// Improvements and extras added by myself
 
 wstring tetronimo[7];
 int fieldWidth = 12;
 int fieldHeight = 18;
 unsigned char *field = nullptr;
 
-int screenWidth = 120;
+int screenWidth = 80;
 int screenHeight = 30;
 
 // Rotation adjustment based on a 4x4 grid
@@ -120,7 +124,9 @@ int main()
 
 	// Game logic 	
 	bool gameOver = false;
-	int curPiece = 0;
+	int curPiece =  NULL;
+	int nextPiece = 0;
+	int forceChange = NULL;
 	int curRotation = 0;
 	int curX = fieldWidth / 2;
 	int curY = 0;
@@ -133,6 +139,7 @@ int main()
 	bool forceDown = false;
 	int pieceCount = 0;
 	int score = 0;
+	int lines = 0;
 
 	vector<int> vLines;
 
@@ -141,24 +148,25 @@ int main()
 		// Game timing
 		this_thread::sleep_for(50ms);
 		speedCounter++;
-		forceDown = (speedCounter == speed);		
+		forceDown = (speedCounter == speed);
 
 		// Input
 		for (int k = 0; k < 4; k++)
 		{
-			keyInput[k] = (0x8000 & GetAsyncKeyState((unsigned char)("\x27\x25\x28Z"[k]))) != 0;
+			// Left and right arrow to move, sown arrow to drop, up arrow to rotate
+			keyInput[k] = (0x8000 & GetAsyncKeyState((unsigned char)("\x25\x27\x28\x26"[k]))) != 0;
 		}
 
 		// Game logic
-		curX += (keyInput[0] && DoesPieceFit(curPiece, curRotation, curX + 1, curY)) ? 1 : 0;
-		curX -= (keyInput[1] && DoesPieceFit(curPiece, curRotation, curX - 1, curY)) ? 1 : 0;
+		curX -= (keyInput[0] && DoesPieceFit(curPiece, curRotation, curX - 1, curY)) ? 1 : 0;
+		curX += (keyInput[1] && DoesPieceFit(curPiece, curRotation, curX + 1, curY)) ? 1 : 0;
 		curY += (keyInput[2] && DoesPieceFit(curPiece, curRotation, curX, curY + 1)) ? 1 : 0;
 
 		if (keyInput[3])
 		{
 			curRotation += (!rotateHold && DoesPieceFit(curPiece, curRotation + 1, curX, curY)) ? 1 : 0;
 			rotateHold = true;
-		}	
+		}
 		else
 		{
 			rotateHold = false;
@@ -220,13 +228,30 @@ int main()
 				if (!vLines.empty())
 				{
 					score += (1 << vLines.size()) * 100;
+					lines++;
 				}
 
 				//Choose next piece
 				curX = fieldWidth / 2;
 				curY = 0;
 				curRotation = 0;
-				curPiece = rand() % 7;
+				srand(time(NULL));
+
+				if (curPiece == NULL)
+				{
+					curPiece = rand() % 7;
+				}
+				else
+				{
+					curPiece = nextPiece;
+				}
+
+				do
+				{
+					nextPiece = rand() % 7;
+				} while (nextPiece == forceChange);
+
+				forceChange = nextPiece;
 
 				// If piece doesn't fit
 				gameOver = !DoesPieceFit(curPiece, curRotation, curX, curY);
@@ -234,7 +259,7 @@ int main()
 
 			speedCounter = 0;
 		}
-		
+
 
 		//Draw field
 		for (int x = 0; x < fieldWidth; x++)
@@ -256,13 +281,33 @@ int main()
 				{
 					// +65 to get ASCII values
 					screen[(curY + y + 2) * screenWidth + (curX + x + 2)] = curPiece + 65;
-				}
+				}				
 			}
 		}
 
 
 		//Draw score
-		swprintf_s(&screen[2 * screenWidth + fieldWidth + 6], 16, L"SCORE: %8d", score);
+		swprintf_s(&screen[2 * screenWidth + fieldWidth + 6], 16, L"Score: %8d", score);
+		swprintf_s(&screen[3 * screenWidth + fieldWidth + 6], 16, L"Lines: %8d", lines);
+
+		//Draw next piece
+		swprintf_s(&screen[5 * screenWidth + fieldWidth + 6], 12, L"Next Piece:");		
+
+		for (int x = 0; x < 4; x++)
+		{
+			for (int y = 0; y < 4; y++)
+			{
+				if (tetronimo[nextPiece][Rotate(x, y, 3)] == L'X')
+				{
+					// +65 to get ASCII values
+					screen[(7 + x) * screenWidth + fieldWidth + (8 + y)] = nextPiece + 65;
+				}
+				else
+				{
+					screen[(7 + x) * screenWidth + fieldWidth + (8 + y)] = 32;
+				}
+			}
+		}
 
 
 		if (!vLines.empty())
@@ -294,6 +339,7 @@ int main()
 	// Oh dear
 	CloseHandle(newConsole);
 	cout << "Game Over! Score: " << score << endl;
+	cout << "Lines: " << lines << endl;
 	system("pause");
 
     return 0;
